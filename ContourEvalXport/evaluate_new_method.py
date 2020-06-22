@@ -23,7 +23,7 @@ def parse_arguments():
             "output_file": args.output_file}
 
 
-def create_table(user_options):
+def compare_to_baseline(user_options):
     jaccard_info = pd.DataFrame(columns=['ID', 'baseline', 'b=0 & c=0', 'b=1 & c=0', 'b=0 & c=1', 'b=1 & c=1'],
                                 copy=True)
     class_dir_path = os.path.join(user_options["root_dir"], 'Classes')
@@ -49,20 +49,62 @@ def create_table(user_options):
                                             'b=0 & c=0': jaccard_b0_c0, 'b=0 & c=1': jaccard_b0_c1,
                                             'b=1 & c=0': jaccard_b1_c0, 'b=1 & c=1': jaccard_b1_c1},
                                            ignore_index=True)
-    output_table(jaccard_info, user_options)
 
-
-def output_table(table, user_options):
-    info = 'Jaccard index table that compares the baseline method with the four types of new methods.\nb=0 stands for' \
-           ' separating borders, b=1 stands for joining borders.\nc=0 stands for using pixel vertices, c=1 stands for' \
+    info = 'Jaccard index table that compares the baseline method with the four types of new methods.' \
+           '\nb=0 stands for' \
+           ' separating borders, b=1 stands for joining borders.\nc=0 stands for using pixel vertices,' \
+           ' c=1 stands for' \
            ' using pixel edges.\n\n'
+    output_table(user_options, jaccard_info)
+
+
+def evaluate_passes(user_options):
+    jaccard_info = pd.DataFrame(columns=['107', '108', '109', '110', '209',
+                                         '296', '297', '307', '323', '324', '568', '578', '651', '713'],
+                                copy=True)
+    jaccard_info.index.name = "# Passes"
+    class_dir_path = os.path.join(user_options["root_dir"], 'Classes')
+    for num_passes in range(0, 11):
+        scores = {}
+        for image in os.listdir(class_dir_path):
+            id = image[:3]
+            resources = shres.Resources('SmallEval', image_index=id, predictor_name='pixel', passes=num_passes)
+            jaccard_score = eval.evaluate_jaccard_score(resources)
+            scores[id] = jaccard_score
+        jaccard_info = jaccard_info.append(scores, ignore_index=True)
+
+    max_values = jaccard_info.idxmax(axis=0)
+    frequencies = max_values.value_counts(normalize=True)
+    frequencies.index.name = "# Passes"
+    frequencies = frequencies.rename('Frequencies of passes')
+    tables = {"jaccard_info": jaccard_info, "pass_frequencies": max_values.value_counts(normalize=True)}
+    output_multiple_tables(user_options, tables)
+
+
+def output_multiple_tables(user_options, tables):
+    f = open(user_options["output_file"], 'w')
+    f.write('Jaccard Values for each image\n')
+    f.write('Index is the number of passes\n')
+    f.close()
+    f = open(user_options["output_file"], 'a')
+    f.write(tables["jaccard_info"].to_string(index=True))
+    f.write('\n\n')
+    f.write('Relative frequencies of the passes with the best jaccard scores\n')
+    f.write(tables["pass_frequencies"].to_string(header=True, name=True))
+    f.close()
+
+
+def output_table(user_options, table, info='\n'):
+
     f = open(user_options["output_file"], 'w')
     f.write(info)
     f.close()
     f = open(user_options["output_file"], 'a')
-    f.write(table.to_string(index=False))
+    f.write(table.to_string(index=True))
     f.close()
 
 
+
+
 if __name__ == '__main__':
-    create_table(parse_arguments())
+    evaluate_passes(parse_arguments())
