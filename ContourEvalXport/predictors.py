@@ -32,7 +32,7 @@ class Predictor:
         # Invoke the selected predictor with the class file (path) as its argument
         if self.resources.predictor == 'pixel':
             return self.options[self.resources.predictor](self.resources.class_file, borders = self.resources.borders,
-                                                   connectivity=self.resources.connectivity)
+                                                   connectivity=self.resources.connectivity, passes=self.resources.passes)
         else:
             return self.options[self.resources.predictor](self.resources.class_file)
 
@@ -63,7 +63,7 @@ def baseline_predictor(class_image_path):
     return label
 
 
-def pixel_method(class_image_path, borders=0, connectivity=0):
+def pixel_method(class_image_path, borders=0, connectivity=0, passes=None):
     # Class image has 3 planes for background, interior, and boundaries. Each plan show the
     # probability that the pixel belongs to the class
     class_image_data = skimage.io.imread(class_image_path)
@@ -91,6 +91,9 @@ def pixel_method(class_image_path, borders=0, connectivity=0):
     counter = 0
     while flag:
         counter += 1
+        if passes is not None:
+            if counter == passes + 1:
+                break
         changes = np.zeros((256, 256))
         flag = False
         # goes through every pixel in image
