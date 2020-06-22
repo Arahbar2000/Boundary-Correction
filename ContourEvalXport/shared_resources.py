@@ -14,7 +14,7 @@ DEFAULT_PREDICTOR = "baseline"
 
 class Resources:
     """ Stores directory, file locations (paths) and other resources necessary to run contour evaluations. """
-    def __init__(self, root_dir, image_index=None, predictor_name='baseline', borders=0, connectivity=0):
+    def __init__(self, root_dir, image_index=None, predictor_name='baseline', borders=0, connectivity=0, passes=None):
         # Directory locations
         self.root_dir = root_dir
         self.class_dir = os.path.join(self.root_dir, CLASS_DIR_NAME)
@@ -31,6 +31,7 @@ class Resources:
         self.predictor = predictor_name
         self.borders = borders
         self.connectivity = connectivity
+        self.passes = passes
 
         assert os.path.isdir(self.root_dir), "Unable to find {}".format(self.root_dir)
         assert os.path.isdir(self.class_dir), "Unable to find {}".format(self.class_dir)
@@ -73,6 +74,9 @@ def parse_arguments():
     help_c = "Whether to process image using pixel edges or vertices. 0 is vertices, 1 is edges." \
              "Default is to separate."
     parser.add_argument("-c", "--connectivity", help=help_c, type=int, default=0, required=False)
+
+    help_pa = "Counts how many passes the pixel_method does."
+    parser.add_argument("-pa", "--passes", help=help_pa, type=int, default=None, required=False)
     args = parser.parse_args()
 
     if args.predictor is None:
@@ -80,6 +84,6 @@ def parse_arguments():
     else:
         resources_obj = Resources(root_dir=args.root_dir, image_index=args.image_id,
                                   predictor_name=args.predictor, borders=args.borders,
-                                  connectivity=args.connectivity)
+                                  connectivity=args.connectivity, passes=args.passes)
 
     return resources_obj
